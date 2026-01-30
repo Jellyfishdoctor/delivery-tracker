@@ -1,0 +1,94 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  projects      Project[] @relation("AccountManager")
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model AccountName {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  projects  Project[]
+}
+
+model Project {
+  id               String      @id @default(cuid())
+  accountManagerId String
+  accountManager   User        @relation("AccountManager", fields: [accountManagerId], references: [id])
+  accountNameId    String
+  accountName      AccountName @relation(fields: [accountNameId], references: [id])
+  stage            String      // POC, ONBOARDING, PRODUCTION
+  product          String      // ANALYTICS, AI_AGENT
+  spoc             String
+  priority         String      // HIGH, MEDIUM, LOW
+  useCaseSummary   String
+  targetDate       DateTime
+  status           String      // NOT_STARTED, IN_PROGRESS, ON_HOLD, COMPLETED, BLOCKED
+  jiraTicket       String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  auditLogs        AuditLog[]
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  userName  String
+  action    String   // CREATE, UPDATE, DELETE
+  fieldName String?
+  oldValue  String?
+  newValue  String?
+  timestamp DateTime @default(now())
+}
