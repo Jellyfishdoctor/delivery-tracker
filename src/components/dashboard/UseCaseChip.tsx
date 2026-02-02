@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { AlertTriangle, Clock } from "lucide-react";
+import { AlertTriangle, Clock, CheckSquare } from "lucide-react";
 
 interface UseCaseChipProps {
   id: string;
@@ -17,6 +17,7 @@ interface UseCaseChipProps {
     email: string;
   } | null;
   pendingActionItems?: number;
+  subtaskProgress?: { completed: number; total: number } | null;
   onClick?: () => void;
 }
 
@@ -50,6 +51,7 @@ export function UseCaseChip({
   targetDate,
   customerEngineer,
   pendingActionItems = 0,
+  subtaskProgress,
   onClick,
 }: UseCaseChipProps) {
   const target = new Date(targetDate);
@@ -111,6 +113,23 @@ export function UseCaseChip({
           </span>
         </div>
       </div>
+
+      {subtaskProgress && subtaskProgress.total > 0 && (
+        <div className="mt-2 flex items-center gap-2">
+          <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary-500 rounded-full transition-all"
+              style={{
+                width: `${Math.round((subtaskProgress.completed / subtaskProgress.total) * 100)}%`,
+              }}
+            />
+          </div>
+          <div className="flex items-center gap-1 text-xs text-slate-400">
+            <CheckSquare className="h-3 w-3" />
+            <span>{subtaskProgress.completed}/{subtaskProgress.total}</span>
+          </div>
+        </div>
+      )}
 
       {pendingActionItems > 0 && (
         <div className="mt-2 text-xs text-amber-400">

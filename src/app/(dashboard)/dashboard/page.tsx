@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Clock,
   Edit,
+  CheckSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { HealthResult } from "@/lib/health";
 import { cn, getJiraUrl } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SubtaskList } from "@/components/subtasks/SubtaskList";
+import { WeeklyDigest } from "@/components/digest/WeeklyDigest";
 
 interface Project {
   id: string;
@@ -62,6 +66,7 @@ interface Project {
   spoc: string;
   lastDiscussed: string | null;
   meetingNotesCount: number;
+  subtaskProgress?: { completed: number; total: number } | null;
 }
 
 interface AggregatedAccount {
@@ -173,8 +178,8 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100">Dashboard</h1>
-          <p className="text-slate-400">Account-centric view of all deliveries</p>
+          <h1 className="text-2xl font-semibold text-black">Dashboard</h1>
+          <p className="text-slate-500">Account-centric view of all deliveries</p>
         </div>
         <div className="flex gap-2">
           <Link href="/new-entry">
@@ -299,6 +304,9 @@ export default function DashboardPage() {
         }}
       />
 
+      {/* Weekly Digest */}
+      <WeeklyDigest />
+
       {/* Quick View Dialog */}
       <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -391,66 +399,80 @@ function QuickViewContent({ project }: { project: Project }) {
         <PriorityBadge priority={fullProject.priority as "HIGH" | "MEDIUM" | "LOW"} />
       </div>
 
-      {/* Details Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        <DetailItem
-          label="Account Manager"
-          value={fullProject.accountManager.name || fullProject.accountManager.email}
-          icon={<User className="h-4 w-4" />}
-        />
-        <DetailItem
-          label="Customer Engineer"
-          value={fullProject.customerEngineer?.name || fullProject.customerEngineer?.email || "Unassigned"}
-          icon={<User className="h-4 w-4" />}
-        />
-        <DetailItem
-          label="SPOC"
-          value={fullProject.spoc}
-          icon={<User className="h-4 w-4" />}
-        />
-        <DetailItem
-          label="Target Date"
-          value={format(targetDate, "MMM d, yyyy")}
-          icon={<Calendar className="h-4 w-4" />}
-          highlight={isOverdue}
-          subtitle={isOverdue ? "Overdue" : undefined}
-        />
-        <DetailItem
-          label="Product"
-          value={parseProducts(fullProject.product).map(p => p === "AI_AGENT" ? "AI Agent" : "Analytics").join(", ")}
-        />
-        <DetailItem
-          label="Channels"
-          value={parseChannels(fullProject.channels).join(", ") || "N/A"}
-        />
-      </div>
+      {/* Tabs */}
+      <Tabs defaultValue="details" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 bg-slate-800">
+          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="subtasks" className="flex items-center gap-1">
+            <CheckSquare className="h-4 w-4" />
+            Subtasks
+          </TabsTrigger>
+          <TabsTrigger value="meetings" className="flex items-center gap-1">
+            <MessageSquare className="h-4 w-4" />
+            Notes
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Jira Ticket */}
-      {fullProject.jiraTicket && (
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-400">Jira:</span>
-          <a
-            href={getJiraUrl(fullProject.jiraTicket)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
-          >
-            {fullProject.jiraTicket}
-            <ExternalLink className="h-3 w-3" />
-          </a>
-        </div>
-      )}
+        <TabsContent value="details" className="space-y-4 mt-4">
+          {/* Details Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            <DetailItem
+              label="Account Manager"
+              value={fullProject.accountManager.name || fullProject.accountManager.email}
+              icon={<User className="h-4 w-4" />}
+            />
+            <DetailItem
+              label="Customer Engineer"
+              value={fullProject.customerEngineer?.name || fullProject.customerEngineer?.email || "Unassigned"}
+              icon={<User className="h-4 w-4" />}
+            />
+            <DetailItem
+              label="SPOC"
+              value={fullProject.spoc}
+              icon={<User className="h-4 w-4" />}
+            />
+            <DetailItem
+              label="Target Date"
+              value={format(targetDate, "MMM d, yyyy")}
+              icon={<Calendar className="h-4 w-4" />}
+              highlight={isOverdue}
+              subtitle={isOverdue ? "Overdue" : undefined}
+            />
+            <DetailItem
+              label="Product"
+              value={parseProducts(fullProject.product).map(p => p === "AI_AGENT" ? "AI Agent" : "Analytics").join(", ")}
+            />
+            <DetailItem
+              label="Channels"
+              value={parseChannels(fullProject.channels).join(", ") || "N/A"}
+            />
+          </div>
 
-      <Separator className="bg-slate-800" />
+          {/* Jira Ticket */}
+          {fullProject.jiraTicket && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-400">Jira:</span>
+              <a
+                href={getJiraUrl(fullProject.jiraTicket)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
+              >
+                {fullProject.jiraTicket}
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          )}
+        </TabsContent>
 
-      {/* Meeting Notes Section */}
-      <div>
-        <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
-          <MessageSquare className="h-5 w-5" />
-          Meeting Notes
-        </h3>
-        <MeetingTimeline projectId={project.id} />
-      </div>
+        <TabsContent value="subtasks" className="mt-4">
+          <SubtaskList projectId={project.id} />
+        </TabsContent>
+
+        <TabsContent value="meetings" className="mt-4">
+          <MeetingTimeline projectId={project.id} />
+        </TabsContent>
+      </Tabs>
 
       {/* Timestamps */}
       <div className="text-xs text-slate-500 pt-4 border-t border-slate-800">

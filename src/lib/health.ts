@@ -1,11 +1,19 @@
 // Health Score Calculation Utility
-// Algorithm:
-// Base: 100 points
-// - Each overdue project: -15
-// - Each blocked project: -20
-// - High priority at risk: -10
-// + Recent completions (last 30 days): +5 each
-// Score mapped to: Critical (0-25), At Risk (26-50), Fair (51-75), Good (76-100)
+// New Algorithm (Stage-Based + Time-Based):
+//
+// Core Principle: Account health is a function of delivery stage AND time remaining
+//
+// Rule 1: Blocked = Critical (regardless of stage or time)
+// Rule 2: Overdue = At Risk max (unless blocked → Critical)
+// Rule 3: Stage-Based Caps:
+//   - PRODUCTION: Can achieve Good (delivery completed)
+//   - POC/ONBOARDING: Max is Fair (still pending delivery)
+// Rule 4: Time-Based Risk (7/3/1 Rule) for POC/ONBOARDING:
+//   - > 7 days: Fair
+//   - ≤ 7 days: Fair (getting close)
+//   - ≤ 3 days: At Risk (urgent)
+//   - ≤ 1 day: Critical (immediate action)
+//   - Overdue: Critical
 
 export type HealthStatus = 'Critical' | 'At Risk' | 'Fair' | 'Good';
 
@@ -14,6 +22,7 @@ export interface ProjectForHealth {
   priority: string;
   targetDate: Date | string;
   updatedAt?: Date | string;
+  stage: string;  // POC, ONBOARDING, PRODUCTION
 }
 
 export interface HealthResult {
@@ -22,9 +31,17 @@ export interface HealthResult {
   breakdown: {
     overdueCount: number;
     blockedCount: number;
-    highPriorityAtRiskCount: number;
-    recentCompletionsCount: number;
+    pendingProjectsCount: number;
+    minDaysRemaining: number | null;
   };
+}
+
+export function getDaysUntilTarget(targetDate: Date | string): number {
+  const target = new Date(targetDate);
+  const today = new Date();
+  target.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+  return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 export function isOverdue(project: ProjectForHealth): boolean {
@@ -40,52 +57,120 @@ export function isBlocked(project: ProjectForHealth): boolean {
   return project.status === 'BLOCKED';
 }
 
-export function isHighPriorityAtRisk(project: ProjectForHealth): boolean {
-  if (project.priority !== 'HIGH') return false;
-  if (project.status === 'COMPLETED') return false;
-
-  // At risk: blocked or overdue
-  return isBlocked(project) || isOverdue(project);
-}
-
-export function isRecentCompletion(project: ProjectForHealth): boolean {
-  if (project.status !== 'COMPLETED') return false;
-  if (!project.updatedAt) return false;
-
-  const updatedAt = new Date(project.updatedAt);
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-  return updatedAt >= thirtyDaysAgo;
+export function isPendingStage(project: ProjectForHealth): boolean {
+  return project.stage === 'POC' || project.stage === 'ONBOARDING';
 }
 
 export function calculateHealthScore(projects: ProjectForHealth[]): HealthResult {
-  let score = 100;
+  // Skip completed projects for health calculation
+  const activeProjects = projects.filter(p => p.status !== 'COMPLETED');
 
-  const overdueCount = projects.filter(isOverdue).length;
-  const blockedCount = projects.filter(isBlocked).length;
-  const highPriorityAtRiskCount = projects.filter(isHighPriorityAtRisk).length;
-  const recentCompletionsCount = projects.filter(isRecentCompletion).length;
+  // If no active projects, all are completed = Good health
+  if (activeProjects.length === 0) {
+    return {
+      score: 100,
+      status: 'Good',
+      breakdown: {
+        overdueCount: 0,
+        blockedCount: 0,
+        pendingProjectsCount: 0,
+        minDaysRemaining: null,
+      },
+    };
+  }
 
-  // Apply penalties
-  score -= overdueCount * 15;
-  score -= blockedCount * 20;
-  score -= highPriorityAtRiskCount * 10;
+  const blockedCount = activeProjects.filter(isBlocked).length;
+  const overdueCount = activeProjects.filter(isOverdue).length;
+  const pendingProjects = activeProjects.filter(isPendingStage);
+  const hasProduction = activeProjects.some(p => p.stage === 'PRODUCTION');
 
-  // Apply bonuses
-  score += recentCompletionsCount * 5;
+  // Calculate minimum days remaining for pending projects
+  let minDaysRemaining: number | null = null;
+  if (pendingProjects.length > 0) {
+    minDaysRemaining = Math.min(
+      ...pendingProjects.map(p => getDaysUntilTarget(p.targetDate))
+    );
+  }
 
-  // Clamp score to 0-100
-  score = Math.max(0, Math.min(100, score));
+  // Rule 1: Blocked = Critical
+  if (blockedCount > 0) {
+    return {
+      score: 0,
+      status: 'Critical',
+      breakdown: {
+        overdueCount,
+        blockedCount,
+        pendingProjectsCount: pendingProjects.length,
+        minDaysRemaining,
+      },
+    };
+  }
 
+  // Rule 2: Overdue = At Risk max
+  if (overdueCount > 0) {
+    return {
+      score: 40,
+      status: 'At Risk',
+      breakdown: {
+        overdueCount,
+        blockedCount,
+        pendingProjectsCount: pendingProjects.length,
+        minDaysRemaining,
+      },
+    };
+  }
+
+  // If only Production projects (no pending), can be Good
+  if (pendingProjects.length === 0 && hasProduction) {
+    return {
+      score: 100,
+      status: 'Good',
+      breakdown: {
+        overdueCount,
+        blockedCount,
+        pendingProjectsCount: 0,
+        minDaysRemaining: null,
+      },
+    };
+  }
+
+  // Rule 3: Time-based status for pending deliveries (POC/ONBOARDING)
+  if (minDaysRemaining !== null) {
+    if (minDaysRemaining <= 1) {
+      return {
+        score: 15,
+        status: 'Critical',
+        breakdown: {
+          overdueCount,
+          blockedCount,
+          pendingProjectsCount: pendingProjects.length,
+          minDaysRemaining,
+        },
+      };
+    }
+    if (minDaysRemaining <= 3) {
+      return {
+        score: 40,
+        status: 'At Risk',
+        breakdown: {
+          overdueCount,
+          blockedCount,
+          pendingProjectsCount: pendingProjects.length,
+          minDaysRemaining,
+        },
+      };
+    }
+  }
+
+  // ≤ 7 days or more = Fair (max for non-Production)
   return {
-    score,
-    status: mapScoreToStatus(score),
+    score: 65,
+    status: 'Fair',
     breakdown: {
       overdueCount,
       blockedCount,
-      highPriorityAtRiskCount,
-      recentCompletionsCount,
+      pendingProjectsCount: pendingProjects.length,
+      minDaysRemaining,
     },
   };
 }

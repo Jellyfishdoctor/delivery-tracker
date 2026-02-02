@@ -27,6 +27,7 @@ interface Project {
   spoc: string;
   lastDiscussed: string | null;
   meetingNotesCount: number;
+  subtaskProgress?: { completed: number; total: number } | null;
 }
 
 interface AccountCardProps {
@@ -110,6 +111,7 @@ export function AccountCard({
                 priority={project.priority}
                 targetDate={project.targetDate}
                 customerEngineer={project.customerEngineer}
+                subtaskProgress={project.subtaskProgress}
                 onClick={() => onProjectClick?.(project)}
               />
             ))}

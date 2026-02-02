@@ -47,6 +47,11 @@ export async function GET(request: Request) {
                 meetingDate: true,
               },
             },
+            subtasks: {
+              select: {
+                completed: true,
+              },
+            },
             _count: {
               select: {
                 meetingNotes: true,
@@ -72,6 +77,7 @@ export async function GET(request: Request) {
           priority: p.priority,
           targetDate: p.targetDate,
           updatedAt: p.updatedAt,
+          stage: p.stage,
         }))
       );
 
@@ -87,21 +93,27 @@ export async function GET(request: Request) {
         projectCount: account.projects.length,
         health,
         accountManager: primaryAM,
-        projects: account.projects.map((project) => ({
-          id: project.id,
-          useCaseSummary: project.useCaseSummary,
-          stage: project.stage,
-          status: project.status,
-          priority: project.priority,
-          targetDate: project.targetDate,
-          customerEngineer: project.customerEngineer,
-          product: project.product,
-          channels: project.channels,
-          jiraTicket: project.jiraTicket,
-          spoc: project.spoc,
-          lastDiscussed: project.meetingNotes[0]?.meetingDate || null,
-          meetingNotesCount: project._count.meetingNotes,
-        })),
+        projects: account.projects.map((project) => {
+          const subtaskTotal = project.subtasks.length;
+          const subtaskCompleted = project.subtasks.filter((s) => s.completed).length;
+
+          return {
+            id: project.id,
+            useCaseSummary: project.useCaseSummary,
+            stage: project.stage,
+            status: project.status,
+            priority: project.priority,
+            targetDate: project.targetDate,
+            customerEngineer: project.customerEngineer,
+            product: project.product,
+            channels: project.channels,
+            jiraTicket: project.jiraTicket,
+            spoc: project.spoc,
+            lastDiscussed: project.meetingNotes[0]?.meetingDate || null,
+            meetingNotesCount: project._count.meetingNotes,
+            subtaskProgress: subtaskTotal > 0 ? { completed: subtaskCompleted, total: subtaskTotal } : null,
+          };
+        }),
       };
     });
 

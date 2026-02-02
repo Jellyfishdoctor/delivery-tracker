@@ -61,11 +61,31 @@ export async function GET(request: Request) {
       _count: true,
     });
 
-    // By Product
-    const byProduct = await prisma.project.groupBy({
-      by: ["product"],
+    // By Product - count individual products from JSON array field
+    const projectsForProduct = await prisma.project.findMany({
       where,
-      _count: true,
+      select: { product: true },
+    });
+
+    const productCounts: Record<string, number> = {
+      ANALYTICS: 0,
+      AI_AGENT: 0,
+    };
+
+    projectsForProduct.forEach((p) => {
+      try {
+        const products = JSON.parse(p.product) as string[];
+        products.forEach((prod) => {
+          if (prod in productCounts) {
+            productCounts[prod]++;
+          }
+        });
+      } catch {
+        // If not valid JSON, treat as single product
+        if (p.product in productCounts) {
+          productCounts[p.product]++;
+        }
+      }
     });
 
     // By Priority
@@ -102,7 +122,7 @@ export async function GET(request: Request) {
       active: w._count,
     }));
 
-    // Customer Engineer Workload (projects per CE)
+    // Customer Engineer Workload (projects per CE - both user ID and free-form name)
     const ceWorkload = await prisma.project.groupBy({
       by: ["customerEngineerId"],
       where: {
@@ -113,20 +133,41 @@ export async function GET(request: Request) {
       _count: true,
     });
 
+    // Also get free-form CE name projects
+    const ceNameWorkload = await prisma.project.groupBy({
+      by: ["customerEngineerName"],
+      where: {
+        ...where,
+        customerEngineerId: null,
+        customerEngineerName: { not: null },
+        status: { notIn: ["COMPLETED"] },
+      },
+      _count: true,
+    });
+
+    // Get all users who are assigned as CEs (regardless of role)
     const customerEngineers = await prisma.user.findMany({
       where: {
         id: { in: ceWorkload.map((w) => w.customerEngineerId).filter((id): id is string => id !== null) },
-        role: "CUSTOMER_ENGINEER"
       },
       select: { id: true, name: true, email: true },
     });
 
-    const byCustomerEngineer = ceWorkload.map((w) => ({
-      id: w.customerEngineerId,
-      name: customerEngineers.find((c) => c.id === w.customerEngineerId)?.name ||
-            customerEngineers.find((c) => c.id === w.customerEngineerId)?.email || "Unknown",
-      active: w._count,
-    }));
+    const byCustomerEngineer = [
+      ...ceWorkload.map((w) => ({
+        id: w.customerEngineerId,
+        name: customerEngineers.find((c) => c.id === w.customerEngineerId)?.name ||
+              customerEngineers.find((c) => c.id === w.customerEngineerId)?.email || "Unknown",
+        active: w._count,
+      })),
+      ...ceNameWorkload
+        .filter((w) => w.customerEngineerName)
+        .map((w) => ({
+          id: `name-${w.customerEngineerName}`,
+          name: w.customerEngineerName!,
+          active: w._count,
+        })),
+    ];
 
     // CE completed projects
     const ceCompleted = await prisma.project.groupBy({
@@ -139,18 +180,39 @@ export async function GET(request: Request) {
       _count: true,
     });
 
-    const byCustomerEngineerCompleted = ceCompleted.map((w) => ({
-      id: w.customerEngineerId,
-      name: customerEngineers.find((c) => c.id === w.customerEngineerId)?.name ||
-            customerEngineers.find((c) => c.id === w.customerEngineerId)?.email || "Unknown",
-      completed: w._count,
-    }));
+    const ceNameCompleted = await prisma.project.groupBy({
+      by: ["customerEngineerName"],
+      where: {
+        ...where,
+        customerEngineerId: null,
+        customerEngineerName: { not: null },
+        status: "COMPLETED",
+      },
+      _count: true,
+    });
 
-    // Unassigned projects (no CE)
+    const byCustomerEngineerCompleted = [
+      ...ceCompleted.map((w) => ({
+        id: w.customerEngineerId,
+        name: customerEngineers.find((c) => c.id === w.customerEngineerId)?.name ||
+              customerEngineers.find((c) => c.id === w.customerEngineerId)?.email || "Unknown",
+        completed: w._count,
+      })),
+      ...ceNameCompleted
+        .filter((w) => w.customerEngineerName)
+        .map((w) => ({
+          id: `name-${w.customerEngineerName}`,
+          name: w.customerEngineerName!,
+          completed: w._count,
+        })),
+    ];
+
+    // Unassigned projects (no CE ID and no CE name)
     const unassignedProjects = await prisma.project.count({
       where: {
         ...where,
         customerEngineerId: null,
+        customerEngineerName: null,
         status: { notIn: ["COMPLETED"] },
       },
     });
@@ -248,6 +310,7 @@ export async function GET(request: Request) {
             priority: true,
             targetDate: true,
             updatedAt: true,
+            stage: true,
           },
         },
       },
@@ -262,6 +325,7 @@ export async function GET(request: Request) {
             priority: p.priority,
             targetDate: p.targetDate,
             updatedAt: p.updatedAt,
+            stage: p.stage,
           }))
         );
         return {
@@ -320,10 +384,10 @@ export async function GET(request: Request) {
       overdue,
       unassignedProjects,
       byStage: byStage.map((s) => ({ name: s.stage, value: s._count })),
-      byProduct: byProduct.map((p) => ({
-        name: p.product === "AI_AGENT" ? "AI Agent" : "Analytics",
-        value: p._count,
-      })),
+      byProduct: [
+        { name: "Analytics", value: productCounts.ANALYTICS },
+        { name: "AI Agent", value: productCounts.AI_AGENT },
+      ].filter((p) => p.value > 0),
       byPriority: byPriority.map((p) => ({
         name: p.priority,
         value: p._count,

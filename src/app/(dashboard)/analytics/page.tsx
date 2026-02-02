@@ -28,6 +28,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PriorityBadge } from "@/components/shared/PriorityBadge";
+import { ResourceAllocation } from "@/components/resources/ResourceAllocation";
+import { Separator } from "@/components/ui/separator";
 import { Briefcase, TrendingUp, CheckCircle, AlertTriangle, Users, UserCheck, Building2, Ban } from "lucide-react";
 
 interface AnalyticsData {
@@ -157,8 +159,8 @@ export default function AnalyticsPage() {
     <div className="p-6 lg:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Analytics</h1>
-          <p className="text-slate-500 dark:text-slate-400">Overview of project deliveries</p>
+          <h1 className="text-2xl font-semibold text-black">Analytics</h1>
+          <p className="text-slate-500">Overview of project deliveries</p>
         </div>
         <div className="flex gap-4">
           <Select
@@ -234,14 +236,14 @@ export default function AnalyticsPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className={data.overdue > 0 ? "border-red-200 bg-red-50" : ""}>
+        <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-lg ${data.overdue > 0 ? "bg-red-100" : "bg-slate-100"}`}>
-                <AlertTriangle className={`h-6 w-6 ${data.overdue > 0 ? "text-red-600" : "text-slate-600"}`} />
+              <div className="p-3 rounded-lg bg-slate-800">
+                <AlertTriangle className={`h-6 w-6 ${data.overdue > 0 ? "text-red-500" : "text-slate-400"}`} />
               </div>
               <div>
-                <p className={`text-2xl font-bold ${data.overdue > 0 ? "text-red-600" : ""}`}>
+                <p className={`text-2xl font-bold ${data.overdue > 0 ? "text-red-500" : ""}`}>
                   {data.overdue}
                 </p>
                 <p className="text-sm text-muted-foreground">Overdue</p>
@@ -253,11 +255,11 @@ export default function AnalyticsPage() {
 
       {/* Account Health Overview */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card className="bg-slate-50 dark:bg-slate-900">
+        <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                <Building2 className="h-6 w-6 text-slate-600 dark:text-slate-400" />
+              <div className="p-3 bg-slate-800 rounded-lg">
+                <Building2 className="h-6 w-6 text-slate-400" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{data.accountHealthOverview.total}</p>
@@ -266,34 +268,34 @@ export default function AnalyticsPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-green-50 dark:bg-green-950/30">
+        <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{data.accountHealthOverview.good}</p>
+              <p className="text-2xl font-bold text-green-500">{data.accountHealthOverview.good}</p>
               <p className="text-sm text-muted-foreground">Good Health</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-yellow-50 dark:bg-yellow-950/30">
+        <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <p className="text-2xl font-bold text-yellow-600">{data.accountHealthOverview.fair}</p>
+              <p className="text-2xl font-bold text-yellow-500">{data.accountHealthOverview.fair}</p>
               <p className="text-sm text-muted-foreground">Fair</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-orange-50 dark:bg-orange-950/30">
+        <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <p className="text-2xl font-bold text-orange-600">{data.accountHealthOverview.atRisk}</p>
+              <p className="text-2xl font-bold text-orange-500">{data.accountHealthOverview.atRisk}</p>
               <p className="text-sm text-muted-foreground">At Risk</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-red-50 dark:bg-red-950/30">
+        <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <p className="text-2xl font-bold text-red-600">{data.accountHealthOverview.critical}</p>
+              <p className="text-2xl font-bold text-red-500">{data.accountHealthOverview.critical}</p>
               <p className="text-sm text-muted-foreground">Critical</p>
             </div>
           </CardContent>
@@ -305,7 +307,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Blocked Projects by Account */}
           {Object.keys(data.blockedByAccount).length > 0 && (
-            <Card className="border-red-200 dark:border-red-900">
+            <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Ban className="h-5 w-5 text-red-500" />
@@ -316,17 +318,17 @@ export default function AnalyticsPage() {
                 <div className="space-y-4 max-h-[250px] overflow-y-auto">
                   {Object.entries(data.blockedByAccount).slice(0, 5).map(([accountName, projects]) => (
                     <div key={accountName}>
-                      <h4 className="font-medium text-sm text-slate-700 dark:text-slate-300 mb-2">
+                      <h4 className="font-medium text-sm text-slate-300 mb-2">
                         {accountName}
                       </h4>
                       <div className="space-y-1">
                         {projects.map((project) => (
                           <div
                             key={project.id}
-                            className="flex items-center justify-between text-sm bg-red-50 dark:bg-red-950/30 p-2 rounded"
+                            className="flex items-center justify-between text-sm bg-slate-800 p-2 rounded"
                           >
                             <span className="truncate max-w-[200px]">{project.useCaseSummary}</span>
-                            <span className="text-red-600 text-xs whitespace-nowrap ml-2">
+                            <span className="text-red-500 text-xs whitespace-nowrap ml-2">
                               {project.daysBlocked} days
                             </span>
                           </div>
@@ -341,7 +343,7 @@ export default function AnalyticsPage() {
 
           {/* Overdue Projects by Account */}
           {Object.keys(data.overdueByAccount).length > 0 && (
-            <Card className="border-orange-200 dark:border-orange-900">
+            <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5 text-orange-500" />
@@ -352,17 +354,17 @@ export default function AnalyticsPage() {
                 <div className="space-y-4 max-h-[250px] overflow-y-auto">
                   {Object.entries(data.overdueByAccount).slice(0, 5).map(([accountName, projects]) => (
                     <div key={accountName}>
-                      <h4 className="font-medium text-sm text-slate-700 dark:text-slate-300 mb-2">
+                      <h4 className="font-medium text-sm text-slate-300 mb-2">
                         {accountName}
                       </h4>
                       <div className="space-y-1">
                         {projects.map((project) => (
                           <div
                             key={project.id}
-                            className="flex items-center justify-between text-sm bg-orange-50 dark:bg-orange-950/30 p-2 rounded"
+                            className="flex items-center justify-between text-sm bg-slate-800 p-2 rounded"
                           >
                             <span className="truncate max-w-[200px]">{project.useCaseSummary}</span>
-                            <span className="text-orange-600 text-xs whitespace-nowrap ml-2">
+                            <span className="text-orange-500 text-xs whitespace-nowrap ml-2">
                               {project.daysOverdue} days overdue
                             </span>
                           </div>
@@ -491,60 +493,31 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Customer Engineer Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* CE Workload Chart */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              Customer Engineer Workload
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {data.byCustomerEngineer.length === 0 ? (
-              <p className="text-muted-foreground text-sm py-8 text-center">No projects assigned to Customer Engineers yet</p>
-            ) : (
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.byCustomerEngineer}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="active" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="Active Projects" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* CE Stats Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-primary" />
-              CE Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-950/30 rounded-lg">
-              <span className="text-sm text-muted-foreground">Total CEs Active</span>
-              <span className="text-xl font-bold text-primary">{data.byCustomerEngineer.length}</span>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2 text-white">
+            <Users className="h-5 w-5 text-primary" />
+            Customer Engineer Workload
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data.byCustomerEngineer.length === 0 ? (
+            <p className="text-muted-foreground text-sm py-8 text-center">No projects assigned to Customer Engineers yet</p>
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.byCustomerEngineer}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="active" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="Active Projects" />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-            <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
-              <span className="text-sm text-muted-foreground">Unassigned Projects</span>
-              <span className="text-xl font-bold text-amber-600">{data.unassignedProjects}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/30 rounded-lg">
-              <span className="text-sm text-muted-foreground">CE Completions</span>
-              <span className="text-xl font-bold text-green-600">
-                {data.byCustomerEngineerCompleted.reduce((acc, ce) => acc + ce.completed, 0)}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Monthly Trend */}
       <Card>
@@ -635,9 +608,9 @@ export default function AnalyticsPage() {
         </Card>
 
         {/* Overdue Projects */}
-        <Card className={data.overdueProjects.length > 0 ? "border-red-200" : ""}>
+        <Card>
           <CardHeader>
-            <CardTitle className="text-lg text-red-600">Overdue Projects</CardTitle>
+            <CardTitle className="text-lg text-red-500">Overdue Projects</CardTitle>
           </CardHeader>
           <CardContent>
             {data.overdueProjects.length === 0 ? (
@@ -660,6 +633,10 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Resource Allocation Section */}
+      <Separator className="my-8" />
+      <ResourceAllocation />
     </div>
   );
 }
