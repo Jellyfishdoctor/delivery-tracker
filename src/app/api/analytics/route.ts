@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addWeeks, subMonths, format } from "date-fns";
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addWeeks, subMonths, format, differenceInDays } from "date-fns";
+import { calculateHealthScore } from "@/lib/health";
 
 export async function GET(request: Request) {
   try {
@@ -101,6 +102,59 @@ export async function GET(request: Request) {
       active: w._count,
     }));
 
+    // Customer Engineer Workload (projects per CE)
+    const ceWorkload = await prisma.project.groupBy({
+      by: ["customerEngineerId"],
+      where: {
+        ...where,
+        customerEngineerId: { not: null },
+        status: { notIn: ["COMPLETED"] },
+      },
+      _count: true,
+    });
+
+    const customerEngineers = await prisma.user.findMany({
+      where: {
+        id: { in: ceWorkload.map((w) => w.customerEngineerId).filter((id): id is string => id !== null) },
+        role: "CUSTOMER_ENGINEER"
+      },
+      select: { id: true, name: true, email: true },
+    });
+
+    const byCustomerEngineer = ceWorkload.map((w) => ({
+      id: w.customerEngineerId,
+      name: customerEngineers.find((c) => c.id === w.customerEngineerId)?.name ||
+            customerEngineers.find((c) => c.id === w.customerEngineerId)?.email || "Unknown",
+      active: w._count,
+    }));
+
+    // CE completed projects
+    const ceCompleted = await prisma.project.groupBy({
+      by: ["customerEngineerId"],
+      where: {
+        ...where,
+        customerEngineerId: { not: null },
+        status: "COMPLETED",
+      },
+      _count: true,
+    });
+
+    const byCustomerEngineerCompleted = ceCompleted.map((w) => ({
+      id: w.customerEngineerId,
+      name: customerEngineers.find((c) => c.id === w.customerEngineerId)?.name ||
+            customerEngineers.find((c) => c.id === w.customerEngineerId)?.email || "Unknown",
+      completed: w._count,
+    }));
+
+    // Unassigned projects (no CE)
+    const unassignedProjects = await prisma.project.count({
+      where: {
+        ...where,
+        customerEngineerId: null,
+        status: { notIn: ["COMPLETED"] },
+      },
+    });
+
     // Monthly trend (last 6 months)
     const monthlyTrend = [];
     for (let i = 5; i >= 0; i--) {
@@ -171,6 +225,88 @@ export async function GET(request: Request) {
       orderBy: { targetDate: "asc" },
     });
 
+    // Blocked projects
+    const blockedProjects = await prisma.project.findMany({
+      where: {
+        ...where,
+        status: "BLOCKED",
+      },
+      include: {
+        accountManager: { select: { id: true, name: true, email: true } },
+        accountName: true,
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+
+    // Account health overview
+    const accountsWithProjects = await prisma.accountName.findMany({
+      include: {
+        projects: {
+          where: Object.keys(where).length > 0 ? where : undefined,
+          select: {
+            status: true,
+            priority: true,
+            targetDate: true,
+            updatedAt: true,
+          },
+        },
+      },
+    });
+
+    const accountHealthData = accountsWithProjects
+      .filter((account) => account.projects.length > 0)
+      .map((account) => {
+        const health = calculateHealthScore(
+          account.projects.map((p) => ({
+            status: p.status,
+            priority: p.priority,
+            targetDate: p.targetDate,
+            updatedAt: p.updatedAt,
+          }))
+        );
+        return {
+          id: account.id,
+          name: account.name,
+          projectCount: account.projects.length,
+          health,
+        };
+      });
+
+    const accountHealthOverview = {
+      total: accountHealthData.length,
+      good: accountHealthData.filter((a) => a.health.status === "Good").length,
+      fair: accountHealthData.filter((a) => a.health.status === "Fair").length,
+      atRisk: accountHealthData.filter((a) => a.health.status === "At Risk").length,
+      critical: accountHealthData.filter((a) => a.health.status === "Critical").length,
+    };
+
+    // Risk indicators - blocked and overdue by account
+    const blockedByAccount = blockedProjects.reduce((acc, project) => {
+      const accountName = project.accountName.name;
+      if (!acc[accountName]) {
+        acc[accountName] = [];
+      }
+      acc[accountName].push({
+        id: project.id,
+        useCaseSummary: (project as { useCaseSummary?: string }).useCaseSummary || "Unknown",
+        daysBlocked: differenceInDays(now, project.updatedAt),
+      });
+      return acc;
+    }, {} as Record<string, Array<{ id: string; useCaseSummary: string; daysBlocked: number }>>);
+
+    const overdueByAccount = overdueProjects.reduce((acc, project) => {
+      const accountName = project.accountName.name;
+      if (!acc[accountName]) {
+        acc[accountName] = [];
+      }
+      acc[accountName].push({
+        id: project.id,
+        useCaseSummary: (project as { useCaseSummary?: string }).useCaseSummary || "Unknown",
+        daysOverdue: differenceInDays(now, project.targetDate),
+      });
+      return acc;
+    }, {} as Record<string, Array<{ id: string; useCaseSummary: string; daysOverdue: number }>>);
+
     const priorityColors: Record<string, string> = {
       HIGH: "#EF4444",
       MEDIUM: "#F59E0B",
@@ -182,6 +318,7 @@ export async function GET(request: Request) {
       inProgress,
       completedThisMonth,
       overdue,
+      unassignedProjects,
       byStage: byStage.map((s) => ({ name: s.stage, value: s._count })),
       byProduct: byProduct.map((p) => ({
         name: p.product === "AI_AGENT" ? "AI Agent" : "Analytics",
@@ -197,10 +334,16 @@ export async function GET(request: Request) {
         value: s._count,
       })),
       byAccountManager,
+      byCustomerEngineer,
+      byCustomerEngineerCompleted,
       monthlyTrend,
       dueThisWeek,
       dueNextWeek,
       overdueProjects,
+      blockedProjects,
+      accountHealthOverview,
+      blockedByAccount,
+      overdueByAccount,
     });
   } catch (error) {
     console.error("Error fetching analytics:", error);

@@ -8,7 +8,10 @@ const updateProjectSchema = z.object({
   accountManagerId: z.string().optional(),
   accountNameId: z.string().optional(),
   stage: z.enum(["POC", "ONBOARDING", "PRODUCTION"]).optional(),
-  product: z.enum(["ANALYTICS", "AI_AGENT"]).optional(),
+  product: z.string().optional(), // JSON array string
+  channels: z.string().nullable().optional(), // JSON array string
+  customerEngineerId: z.string().nullable().optional(),
+  customerEngineerName: z.string().nullable().optional(), // Free-form CE name
   spoc: z.string().optional(),
   priority: z.enum(["HIGH", "MEDIUM", "LOW"]).optional(),
   useCaseSummary: z.string().optional(),
@@ -31,6 +34,7 @@ export async function GET(
       where: { id: params.id },
       include: {
         accountManager: { select: { id: true, name: true, email: true } },
+        customerEngineer: { select: { id: true, name: true, email: true } },
         accountName: true,
         auditLogs: {
           orderBy: { timestamp: "desc" },
@@ -91,6 +95,9 @@ export async function PUT(
       accountNameId: "Account Name",
       stage: "Stage",
       product: "Product",
+      channels: "Channels",
+      customerEngineerId: "Customer Engineer",
+      customerEngineerName: "Customer Engineer Name",
       spoc: "SPOC",
       priority: "Priority",
       useCaseSummary: "Use Case Summary",
@@ -124,6 +131,7 @@ export async function PUT(
       },
       include: {
         accountManager: { select: { id: true, name: true, email: true } },
+        customerEngineer: { select: { id: true, name: true, email: true } },
         accountName: true,
       },
     });

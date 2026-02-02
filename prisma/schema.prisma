@@ -9,15 +9,19 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  password      String?
-  image         String?
-  createdAt     DateTime  @default(now())
-  projects      Project[] @relation("AccountManager")
-  accounts      Account[]
-  sessions      Session[]
+  id                 String        @id @default(cuid())
+  email              String        @unique
+  name               String?
+  password           String?
+  image              String?
+  role               String        @default("ACCOUNT_MANAGER") // ACCOUNT_MANAGER, CUSTOMER_ENGINEER
+  createdAt          DateTime      @default(now())
+  projects           Project[]     @relation("AccountManager")
+  ceProjects         Project[]     @relation("CustomerEngineer")
+  accounts           Account[]
+  sessions           Session[]
+  meetingNotes       MeetingNote[]
+  assignedActionItems ActionItem[]
 }
 
 model Account {
@@ -62,22 +66,27 @@ model AccountName {
 }
 
 model Project {
-  id               String      @id @default(cuid())
-  accountManagerId String
-  accountManager   User        @relation("AccountManager", fields: [accountManagerId], references: [id])
-  accountNameId    String
-  accountName      AccountName @relation(fields: [accountNameId], references: [id])
-  stage            String      // POC, ONBOARDING, PRODUCTION
-  product          String      // ANALYTICS, AI_AGENT
-  spoc             String
-  priority         String      // HIGH, MEDIUM, LOW
-  useCaseSummary   String
-  targetDate       DateTime
-  status           String      // NOT_STARTED, IN_PROGRESS, ON_HOLD, COMPLETED, BLOCKED
-  jiraTicket       String?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-  auditLogs        AuditLog[]
+  id                 String        @id @default(cuid())
+  accountManagerId   String
+  accountManager     User          @relation("AccountManager", fields: [accountManagerId], references: [id])
+  accountNameId      String
+  accountName        AccountName   @relation(fields: [accountNameId], references: [id])
+  stage              String        // POC, ONBOARDING, PRODUCTION
+  product            String        // JSON array: ["ANALYTICS", "AI_AGENT"]
+  channels           String?       // JSON array: ["PSTN", "WHATSAPP"] - required when AI_AGENT selected
+  customerEngineerId   String?
+  customerEngineer     User?         @relation("CustomerEngineer", fields: [customerEngineerId], references: [id])
+  customerEngineerName String?       // Free-form CE name when not selecting from users
+  spoc               String
+  priority           String        // HIGH, MEDIUM, LOW
+  useCaseSummary     String
+  targetDate         DateTime
+  status             String        // NOT_STARTED, IN_PROGRESS, ON_HOLD, COMPLETED, BLOCKED
+  jiraTicket         String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  auditLogs          AuditLog[]
+  meetingNotes       MeetingNote[]
 }
 
 model AuditLog {
@@ -91,4 +100,31 @@ model AuditLog {
   oldValue  String?
   newValue  String?
   timestamp DateTime @default(now())
+}
+
+model MeetingNote {
+  id          String       @id @default(cuid())
+  projectId   String
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  meetingDate DateTime
+  notes       String       // Markdown content
+  attendees   String?      // JSON array: ["John", "Mike"]
+  createdById String
+  createdBy   User         @relation(fields: [createdById], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  actionItems ActionItem[]
+}
+
+model ActionItem {
+  id            String       @id @default(cuid())
+  meetingNoteId String
+  meetingNote   MeetingNote  @relation(fields: [meetingNoteId], references: [id], onDelete: Cascade)
+  description   String
+  assigneeId    String?
+  assignee      User?        @relation(fields: [assigneeId], references: [id])
+  assigneeName  String?      // Free-form assignee name when not selecting from users
+  dueDate       DateTime?
+  status        String       @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
+  createdAt     DateTime     @default(now())
 }

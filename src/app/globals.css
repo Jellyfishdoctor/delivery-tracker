@@ -4,67 +4,45 @@
 
 @layer base {
   :root {
-    /* Base colors */
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    /* Dark Purple Theme - Default */
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
 
     /* Card surfaces */
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 224 71% 6%;
+    --card-foreground: 213 31% 91%;
 
     /* Popover */
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 224 71% 6%;
+    --popover-foreground: 213 31% 91%;
 
     /* Primary - Convozen Purple */
     --primary: 263 70% 58%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary */
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 215 28% 17%;
+    --secondary-foreground: 213 31% 91%;
 
     /* Muted */
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 215 28% 17%;
+    --muted-foreground: 215 20% 65%;
 
     /* Accent */
-    --accent: 263 100% 97%;
-    --accent-foreground: 263 70% 50%;
+    --accent: 263 70% 20%;
+    --accent-foreground: 263 70% 80%;
 
     /* Destructive */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 213 31% 91%;
 
     /* Border & Input */
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
     --ring: 263 70% 58%;
 
     /* Radius */
     --radius: 0.375rem;
-  }
-
-  .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 263 70% 58%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 263 70% 20%;
-    --accent-foreground: 263 70% 80%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 263 70% 58%;
   }
 }
 
@@ -74,17 +52,17 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    @apply bg-slate-950 text-slate-100 antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
   /* Typography defaults */
   h1, h2, h3, h4, h5, h6 {
-    @apply text-slate-900 font-semibold tracking-tight;
+    @apply text-slate-100 font-semibold tracking-tight;
   }
 
   p {
-    @apply text-slate-600;
+    @apply text-slate-400;
   }
 }
 
@@ -96,7 +74,7 @@
 
   /* Page header */
   .page-header {
-    @apply bg-white border-b border-slate-200;
+    @apply bg-slate-900 border-b border-slate-800;
   }
 
   .page-header-content {
@@ -105,15 +83,15 @@
 
   /* Section card */
   .section-card {
-    @apply bg-white rounded-lg border border-slate-200 shadow-card;
+    @apply bg-slate-900 rounded-lg border border-slate-800 shadow-card;
   }
 
   .section-card-header {
-    @apply px-6 py-4 border-b border-slate-100;
+    @apply px-6 py-4 border-b border-slate-800;
   }
 
   .section-card-title {
-    @apply text-heading-2 text-slate-900;
+    @apply text-heading-2 text-slate-100;
   }
 
   .section-card-content {
@@ -126,7 +104,7 @@
   }
 
   .form-section-title {
-    @apply text-sm font-medium text-slate-500 uppercase tracking-wider mb-4;
+    @apply text-sm font-medium text-slate-400 uppercase tracking-wider mb-4;
   }
 
   .form-grid {
@@ -138,20 +116,20 @@
   }
 
   .form-label {
-    @apply text-sm font-medium text-slate-700;
+    @apply text-sm font-medium text-slate-300;
   }
 
   /* Stats card */
   .stats-card {
-    @apply bg-white rounded-lg border border-slate-200 shadow-card p-6;
+    @apply bg-slate-900 rounded-lg border border-slate-800 shadow-card p-6;
   }
 
   .stats-value {
-    @apply text-3xl font-bold text-slate-900;
+    @apply text-3xl font-bold text-slate-100;
   }
 
   .stats-label {
-    @apply text-sm text-slate-500 mt-1;
+    @apply text-sm text-slate-400 mt-1;
   }
 
   /* Data table */
@@ -160,15 +138,15 @@
   }
 
   .data-table th {
-    @apply px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-50 border-b border-slate-200;
+    @apply px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider bg-slate-900 border-b border-slate-800;
   }
 
   .data-table td {
-    @apply px-4 py-3 text-slate-600 border-b border-slate-100;
+    @apply px-4 py-3 text-slate-300 border-b border-slate-800;
   }
 
   .data-table tr:hover td {
-    @apply bg-slate-50;
+    @apply bg-slate-800/50;
   }
 
   /* Badge variants */
@@ -177,23 +155,23 @@
   }
 
   .badge-success {
-    @apply bg-success-light text-success;
+    @apply bg-emerald-900/50 text-emerald-400;
   }
 
   .badge-warning {
-    @apply bg-warning-light text-warning;
+    @apply bg-amber-900/50 text-amber-400;
   }
 
   .badge-danger {
-    @apply bg-danger-light text-danger;
+    @apply bg-red-900/50 text-red-400;
   }
 
   .badge-default {
-    @apply bg-slate-100 text-slate-600;
+    @apply bg-slate-800 text-slate-400;
   }
 
   .badge-primary {
-    @apply bg-primary-100 text-primary-700;
+    @apply bg-purple-900/50 text-purple-400;
   }
 }
 
@@ -211,7 +189,7 @@
   /* Scrollbar styling */
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: theme('colors.slate.300') transparent;
+    scrollbar-color: theme('colors.slate.700') transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
@@ -224,11 +202,11 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: theme('colors.slate.300');
+    background-color: theme('colors.slate.700');
     border-radius: 3px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: theme('colors.slate.400');
+    background-color: theme('colors.slate.600');
   }
 }

@@ -9,7 +9,10 @@ const createProjectSchema = z.object({
   accountNameId: z.string().optional(),
   accountNameNew: z.string().optional(),
   stage: z.enum(["POC", "ONBOARDING", "PRODUCTION"]),
-  product: z.enum(["ANALYTICS", "AI_AGENT"]),
+  product: z.string().min(1, "Product is required"), // JSON array string
+  channels: z.string().nullable().optional(), // JSON array string, nullable
+  customerEngineerId: z.string().nullable().optional(),
+  customerEngineerName: z.string().nullable().optional(), // Free-form CE name
   spoc: z.string().min(1, "SPOC is required"),
   priority: z.enum(["HIGH", "MEDIUM", "LOW"]),
   useCaseSummary: z.string().min(1, "Use case summary is required"),
@@ -31,6 +34,7 @@ export async function GET(request: Request) {
     const priority = searchParams.get("priority");
     const status = searchParams.get("status");
     const accountManagerId = searchParams.get("accountManagerId");
+    const customerEngineerId = searchParams.get("customerEngineerId");
     const search = searchParams.get("search");
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
@@ -38,10 +42,11 @@ export async function GET(request: Request) {
     const where: Record<string, unknown> = {};
 
     if (stage) where.stage = stage;
-    if (product) where.product = product;
+    if (product) where.product = { contains: product }; // Search in JSON array string
     if (priority) where.priority = priority;
     if (status) where.status = status;
     if (accountManagerId) where.accountManagerId = accountManagerId;
+    if (customerEngineerId) where.customerEngineerId = customerEngineerId;
 
     if (dateFrom || dateTo) {
       where.targetDate = {};
@@ -61,6 +66,9 @@ export async function GET(request: Request) {
       where,
       include: {
         accountManager: {
+          select: { id: true, name: true, email: true },
+        },
+        customerEngineer: {
           select: { id: true, name: true, email: true },
         },
         accountName: true,
@@ -113,6 +121,9 @@ export async function POST(request: Request) {
         accountNameId,
         stage: data.stage,
         product: data.product,
+        channels: data.channels || null,
+        customerEngineerId: data.customerEngineerId || null,
+        customerEngineerName: data.customerEngineerName || null,
         spoc: data.spoc,
         priority: data.priority,
         useCaseSummary: data.useCaseSummary,
@@ -122,6 +133,7 @@ export async function POST(request: Request) {
       },
       include: {
         accountManager: { select: { id: true, name: true, email: true } },
+        customerEngineer: { select: { id: true, name: true, email: true } },
         accountName: true,
       },
     });

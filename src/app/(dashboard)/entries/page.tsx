@@ -11,7 +11,6 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
-  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,22 +38,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PriorityBadge } from "@/components/shared/PriorityBadge";
 import { StageBadge } from "@/components/shared/StageBadge";
 import { ProjectForm } from "@/components/forms/ProjectForm";
+import { MeetingTimeline } from "@/components/meetings";
 import { useToast } from "@/components/ui/use-toast";
 import { cn, getJiraUrl, isOverdue } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface Project {
   id: string;
   accountManagerId: string;
   accountManager: { id: string; name: string | null; email: string };
+  customerEngineerId: string | null;
+  customerEngineer: { id: string; name: string | null; email: string } | null;
   accountNameId: string;
   accountName: { id: string; name: string };
   stage: "POC" | "ONBOARDING" | "PRODUCTION";
-  product: "ANALYTICS" | "AI_AGENT";
+  product: string; // JSON array string
+  channels: string | null; // JSON array string
   spoc: string;
   priority: "HIGH" | "MEDIUM" | "LOW";
   useCaseSummary: string;
@@ -68,11 +73,33 @@ interface User {
   id: string;
   name: string | null;
   email: string;
+  role?: string;
+}
+
+// Helper to parse JSON array from string
+function parseProducts(product: string): string[] {
+  try {
+    const parsed = JSON.parse(product);
+    return Array.isArray(parsed) ? parsed : [product];
+  } catch {
+    return [product];
+  }
+}
+
+function parseChannels(channels: string | null): string[] {
+  if (!channels) return [];
+  try {
+    const parsed = JSON.parse(channels);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
 export default function EntriesPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [customerEngineers, setCustomerEngineers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({
@@ -81,6 +108,7 @@ export default function EntriesPage() {
     priority: "",
     status: "",
     accountManagerId: "",
+    customerEngineerId: "",
   });
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -92,17 +120,19 @@ export default function EntriesPage() {
   useEffect(() => {
     fetchProjects();
     fetchUsers();
+    fetchCustomerEngineers();
   }, []);
 
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
-      if (filters.stage) params.set("stage", filters.stage);
-      if (filters.product) params.set("product", filters.product);
-      if (filters.priority) params.set("priority", filters.priority);
-      if (filters.status) params.set("status", filters.status);
-      if (filters.accountManagerId) params.set("accountManagerId", filters.accountManagerId);
+      if (filters.stage && filters.stage !== "all") params.set("stage", filters.stage);
+      if (filters.product && filters.product !== "all") params.set("product", filters.product);
+      if (filters.priority && filters.priority !== "all") params.set("priority", filters.priority);
+      if (filters.status && filters.status !== "all") params.set("status", filters.status);
+      if (filters.accountManagerId && filters.accountManagerId !== "all") params.set("accountManagerId", filters.accountManagerId);
+      if (filters.customerEngineerId && filters.customerEngineerId !== "all") params.set("customerEngineerId", filters.customerEngineerId);
       if (search) params.set("search", search);
 
       const response = await fetch(`/api/projects?${params.toString()}`);
@@ -126,6 +156,18 @@ export default function EntriesPage() {
       }
     } catch (error) {
       console.error("Error fetching users:", error);
+    }
+  };
+
+  const fetchCustomerEngineers = async () => {
+    try {
+      const response = await fetch("/api/users?role=CUSTOMER_ENGINEER");
+      if (response.ok) {
+        const data = await response.json();
+        setCustomerEngineers(data);
+      }
+    } catch (error) {
+      console.error("Error fetching customer engineers:", error);
     }
   };
 
@@ -163,11 +205,12 @@ export default function EntriesPage() {
 
   const handleExport = async () => {
     const params = new URLSearchParams();
-    if (filters.stage) params.set("stage", filters.stage);
-    if (filters.product) params.set("product", filters.product);
-    if (filters.priority) params.set("priority", filters.priority);
-    if (filters.status) params.set("status", filters.status);
-    if (filters.accountManagerId) params.set("accountManagerId", filters.accountManagerId);
+    if (filters.stage && filters.stage !== "all") params.set("stage", filters.stage);
+    if (filters.product && filters.product !== "all") params.set("product", filters.product);
+    if (filters.priority && filters.priority !== "all") params.set("priority", filters.priority);
+    if (filters.status && filters.status !== "all") params.set("status", filters.status);
+    if (filters.accountManagerId && filters.accountManagerId !== "all") params.set("accountManagerId", filters.accountManagerId);
+    if (filters.customerEngineerId && filters.customerEngineerId !== "all") params.set("customerEngineerId", filters.customerEngineerId);
 
     window.open(`/api/projects/export?${params.toString()}`, "_blank");
   };
@@ -179,6 +222,7 @@ export default function EntriesPage() {
       priority: "",
       status: "",
       accountManagerId: "",
+      customerEngineerId: "",
     });
     setSearch("");
   };
@@ -190,18 +234,29 @@ export default function EntriesPage() {
   const totalPages = Math.ceil(projects.length / rowsPerPage);
 
   const getRowClassName = (project: Project) => {
-    if (project.status === "COMPLETED") return "bg-green-50";
-    if (project.status === "BLOCKED") return "bg-gray-50";
-    if (isOverdue(project.targetDate, project.status)) return "bg-red-50";
+    if (project.status === "COMPLETED") return "bg-green-50 dark:bg-green-950/20";
+    if (project.status === "BLOCKED") return "bg-gray-50 dark:bg-gray-800/50";
+    if (isOverdue(project.targetDate, project.status)) return "bg-red-50 dark:bg-red-950/20";
     return "";
+  };
+
+  const formatProductDisplay = (product: string) => {
+    const products = parseProducts(product);
+    return products.map(p => p === "AI_AGENT" ? "AI Agent" : "Analytics").join(", ");
+  };
+
+  const formatChannelsDisplay = (channels: string | null) => {
+    const channelList = parseChannels(channels);
+    if (channelList.length === 0) return null;
+    return channelList.join(", ");
   };
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Entries</h1>
-          <p className="text-slate-500">View and manage all project entries</p>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Entries</h1>
+          <p className="text-slate-500 dark:text-slate-400">View and manage all project entries</p>
         </div>
         <Button onClick={handleExport} variant="outline">
           <Download className="mr-2 h-4 w-4" />
@@ -229,7 +284,7 @@ export default function EntriesPage() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <Select
                 value={filters.stage}
                 onValueChange={(value) => setFilters({ ...filters, stage: value })}
@@ -307,6 +362,23 @@ export default function EntriesPage() {
                   ))}
                 </SelectContent>
               </Select>
+
+              <Select
+                value={filters.customerEngineerId}
+                onValueChange={(value) => setFilters({ ...filters, customerEngineerId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Customer Engineer" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All CEs</SelectItem>
+                  {customerEngineers.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name || user.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
@@ -321,8 +393,10 @@ export default function EntriesPage() {
                 <TableRow>
                   <TableHead>Account Name</TableHead>
                   <TableHead>Account Manager</TableHead>
+                  <TableHead>Customer Engineer</TableHead>
                   <TableHead>Stage</TableHead>
                   <TableHead>Product</TableHead>
+                  <TableHead>Channel</TableHead>
                   <TableHead>SPOC</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Target Date</TableHead>
@@ -336,7 +410,7 @@ export default function EntriesPage() {
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 11 }).map((_, j) => (
+                      {Array.from({ length: 13 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-4 w-full" />
                         </TableCell>
@@ -345,7 +419,7 @@ export default function EntriesPage() {
                   ))
                 ) : paginatedProjects.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
                       No projects found
                     </TableCell>
                   </TableRow>
@@ -354,8 +428,20 @@ export default function EntriesPage() {
                     <TableRow key={project.id} className={getRowClassName(project)}>
                       <TableCell className="font-medium">{project.accountName.name}</TableCell>
                       <TableCell>{project.accountManager.name || project.accountManager.email}</TableCell>
+                      <TableCell>
+                        {project.customerEngineer ? (
+                          project.customerEngineer.name || project.customerEngineer.email
+                        ) : (
+                          <span className="text-muted-foreground">Unassigned</span>
+                        )}
+                      </TableCell>
                       <TableCell><StageBadge stage={project.stage} /></TableCell>
-                      <TableCell>{project.product === "AI_AGENT" ? "AI Agent" : "Analytics"}</TableCell>
+                      <TableCell>{formatProductDisplay(project.product)}</TableCell>
+                      <TableCell>
+                        {formatChannelsDisplay(project.channels) || (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>{project.spoc}</TableCell>
                       <TableCell><PriorityBadge priority={project.priority} /></TableCell>
                       <TableCell>
@@ -462,32 +548,47 @@ export default function EntriesPage() {
       <Dialog open={!!editProject} onOpenChange={() => setEditProject(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Project</DialogTitle>
+            <DialogTitle>
+              {editProject?.accountName.name} - {editProject?.useCaseSummary}
+            </DialogTitle>
             <DialogDescription>
-              Update the project details below
+              Manage project details and meeting notes
             </DialogDescription>
           </DialogHeader>
           {editProject && (
-            <ProjectForm
-              mode="edit"
-              initialData={{
-                id: editProject.id,
-                accountManagerId: editProject.accountManagerId,
-                accountNameId: editProject.accountNameId,
-                stage: editProject.stage,
-                product: editProject.product,
-                spoc: editProject.spoc,
-                priority: editProject.priority,
-                useCaseSummary: editProject.useCaseSummary,
-                targetDate: new Date(editProject.targetDate),
-                status: editProject.status,
-                jiraTicket: editProject.jiraTicket || "",
-              }}
-              onSuccess={() => {
-                setEditProject(null);
-                fetchProjects();
-              }}
-            />
+            <Tabs defaultValue="details" className="mt-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="details">Details</TabsTrigger>
+                <TabsTrigger value="meetings">Meeting Notes</TabsTrigger>
+              </TabsList>
+              <TabsContent value="details" className="mt-4">
+                <ProjectForm
+                  mode="edit"
+                  initialData={{
+                    id: editProject.id,
+                    accountManagerId: editProject.accountManagerId,
+                    accountNameId: editProject.accountNameId,
+                    stage: editProject.stage,
+                    product: editProject.product,
+                    channels: editProject.channels,
+                    customerEngineerId: editProject.customerEngineerId || "",
+                    spoc: editProject.spoc,
+                    priority: editProject.priority,
+                    useCaseSummary: editProject.useCaseSummary,
+                    targetDate: new Date(editProject.targetDate),
+                    status: editProject.status,
+                    jiraTicket: editProject.jiraTicket || "",
+                  }}
+                  onSuccess={() => {
+                    setEditProject(null);
+                    fetchProjects();
+                  }}
+                />
+              </TabsContent>
+              <TabsContent value="meetings" className="mt-4">
+                <MeetingTimeline projectId={editProject.id} />
+              </TabsContent>
+            </Tabs>
           )}
         </DialogContent>
       </Dialog>
