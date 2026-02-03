@@ -20,7 +20,7 @@ declare module "next-auth/jwt" {
 
 // Project with relations
 export interface ProjectWithRelations extends Project {
-  accountManager: User;
+  accountManager: User | null;
   accountName: AccountName;
 }
 
@@ -33,7 +33,8 @@ export interface AuditLogWithRelations extends AuditLog {
 
 // Form types
 export interface ProjectFormData {
-  accountManagerId: string;
+  accountManagerId?: string;
+  accountManagerName?: string;
   accountNameId: string;
   accountNameNew?: string;
   stage: "POC" | "ONBOARDING" | "PRODUCTION";

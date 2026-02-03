@@ -79,6 +79,7 @@ interface ProjectFormProps {
     id?: string;
     product?: string | ("ANALYTICS" | "AI_AGENT")[];
     channels?: string | ("PSTN" | "WHATSAPP")[] | null;
+    accountManagerName?: string;
   };
   onSuccess?: () => void;
   mode?: "create" | "edit";
@@ -103,7 +104,7 @@ export function ProjectForm({ initialData, onSuccess, mode = "create" }: Project
   const [accountNameOpen, setAccountNameOpen] = useState(false);
   const [ceOpen, setCeOpen] = useState(false);
   const [newAccountName, setNewAccountName] = useState("");
-  const [newAMName, setNewAMName] = useState("");
+  const [newAMName, setNewAMName] = useState(initialData?.accountManagerName || "");
   const [newCEName, setNewCEName] = useState("");
   const { toast } = useToast();
 

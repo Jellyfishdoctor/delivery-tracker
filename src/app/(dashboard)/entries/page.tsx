@@ -51,8 +51,9 @@ import { Badge } from "@/components/ui/badge";
 
 interface Project {
   id: string;
-  accountManagerId: string;
-  accountManager: { id: string; name: string | null; email: string };
+  accountManagerId: string | null;
+  accountManager: { id: string; name: string | null; email: string } | null;
+  accountManagerName: string | null;
   customerEngineerId: string | null;
   customerEngineer: { id: string; name: string | null; email: string } | null;
   accountNameId: string;
@@ -429,7 +430,11 @@ export default function EntriesPage() {
                   paginatedProjects.map((project) => (
                     <TableRow key={project.id} className={getRowClassName(project)}>
                       <TableCell className="font-medium">{project.accountName.name}</TableCell>
-                      <TableCell>{project.accountManager.name || project.accountManager.email}</TableCell>
+                      <TableCell>
+                        {project.accountManager
+                          ? (project.accountManager.name || project.accountManager.email)
+                          : (project.accountManagerName || <span className="text-muted-foreground">Unassigned</span>)}
+                      </TableCell>
                       <TableCell>
                         {project.customerEngineer ? (
                           project.customerEngineer.name || project.customerEngineer.email
@@ -568,7 +573,8 @@ export default function EntriesPage() {
                   mode="edit"
                   initialData={{
                     id: editProject.id,
-                    accountManagerId: editProject.accountManagerId,
+                    accountManagerId: editProject.accountManagerId || "",
+                    accountManagerName: editProject.accountManagerName || "",
                     accountNameId: editProject.accountNameId,
                     stage: editProject.stage,
                     product: editProject.product,

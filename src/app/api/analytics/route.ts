@@ -107,13 +107,18 @@ export async function GET(request: Request) {
       by: ["accountManagerId"],
       where: {
         ...where,
+        accountManagerId: { not: null },
         status: { notIn: ["COMPLETED"] },
       },
       _count: true,
     });
 
+    const accountManagerIds = workload
+      .map((w) => w.accountManagerId)
+      .filter((id): id is string => id !== null);
+
     const accountManagers = await prisma.user.findMany({
-      where: { id: { in: workload.map((w) => w.accountManagerId) } },
+      where: { id: { in: accountManagerIds } },
       select: { id: true, name: true },
     });
 

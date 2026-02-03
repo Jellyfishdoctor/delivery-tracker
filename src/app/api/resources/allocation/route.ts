@@ -143,6 +143,9 @@ export async function GET(request: Request) {
           unassignedProjects: 0,
           avgPerCE: ceProjects.length,
           maxCapacity: MAX_CAPACITY,
+          ceCompletions: 0,
+          assignedAccountNames: Array.from(new Set(ceProjects.map(p => p.accountName.name))),
+          unassignedAccountNames: [],
         },
       };
 
@@ -241,8 +244,8 @@ export async function GET(request: Request) {
     const assignedProjects = projects.filter(
       (p) => p.customerEngineerId || p.customerEngineerName
     );
-    const assignedAccountNames = [...new Set(assignedProjects.map((p) => p.accountName.name))];
-    const unassignedAccountNames = [...new Set(unassigned.map((p) => p.accountName))];
+    const assignedAccountNames = Array.from(new Set(assignedProjects.map((p) => p.accountName.name)));
+    const unassignedAccountNames = Array.from(new Set(unassigned.map((p) => p.accountName)));
 
     const allocation: ResourceAllocation = {
       engineers,

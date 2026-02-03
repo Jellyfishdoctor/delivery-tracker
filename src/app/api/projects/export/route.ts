@@ -51,7 +51,7 @@ export async function GET(request: Request) {
 
     const rows = projects.map((p) => [
       p.accountName.name,
-      p.accountManager.name || p.accountManager.email,
+      p.accountManager ? (p.accountManager.name || p.accountManager.email) : (p.accountManagerName || ""),
       p.stage,
       p.product,
       p.spoc,
