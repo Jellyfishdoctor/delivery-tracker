@@ -67,9 +67,9 @@ export function CEWorkloadCard({
             <User className="h-5 w-5 text-slate-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-black truncate">{name}</h3>
+            <h3 className="font-semibold text-slate-100 truncate">{name}</h3>
             {email && (
-              <p className="text-xs text-slate-500 truncate">{email}</p>
+              <p className="text-xs text-slate-400 truncate">{email}</p>
             )}
           </div>
         </div>
@@ -96,11 +96,11 @@ export function CEWorkloadCard({
                     <span className="text-sm font-medium text-slate-300 truncate">
                       {project.accountName}
                     </span>
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-slate-400">
                       {stageLabels[project.stage] || project.stage}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 truncate mt-0.5">
+                  <p className="text-xs text-slate-400 truncate mt-0.5">
                     {project.useCaseSummary}
                   </p>
                 </div>

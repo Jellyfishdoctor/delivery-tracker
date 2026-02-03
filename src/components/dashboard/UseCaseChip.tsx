@@ -104,11 +104,11 @@ export function UseCaseChip({
         </span>
       </div>
 
-      <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-        <span>CE: {ceName}</span>
-        <div className="flex items-center gap-1">
+      <div className="mt-2 flex items-center justify-between text-xs">
+        <span className="text-slate-300">CE: {ceName}</span>
+        <div className="flex items-center gap-1 text-slate-400">
           <Clock className="h-3 w-3" />
-          <span className={isOverdue ? "text-red-400" : ""}>
+          <span className={isOverdue ? "text-red-400" : "text-slate-400"}>
             {getDateDisplay()}
           </span>
         </div>

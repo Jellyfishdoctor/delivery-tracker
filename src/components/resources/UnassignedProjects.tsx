@@ -50,7 +50,7 @@ export function UnassignedProjects({ projects, onProjectClick }: UnassignedProje
         <CardTitle className="text-base font-semibold text-slate-300 flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-amber-500" />
           Unassigned
-          <span className="text-sm font-normal text-slate-500">
+          <span className="text-sm font-normal text-slate-400">
             ({projects.length} {projects.length === 1 ? "project needs" : "projects need"} CE assignment)
           </span>
         </CardTitle>
@@ -72,11 +72,11 @@ export function UnassignedProjects({ projects, onProjectClick }: UnassignedProje
                   <span className="text-sm font-medium text-slate-300 truncate">
                     {project.accountName}
                   </span>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-slate-400">
                     {stageLabels[project.stage] || project.stage}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 truncate mt-0.5">
+                <p className="text-xs text-slate-400 truncate mt-0.5">
                   {project.useCaseSummary}
                 </p>
               </div>

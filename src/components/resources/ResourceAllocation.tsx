@@ -91,7 +91,7 @@ export function ResourceAllocation({ onProjectClick }: ResourceAllocationProps) 
       {/* Header */}
       <div className="flex items-center gap-2">
         <Users className="h-5 w-5 text-primary" />
-        <h2 className="text-lg font-semibold text-black">Resource Allocation</h2>
+        <h2 className="text-lg font-semibold text-slate-100">Resource Allocation</h2>
       </div>
 
       {/* Summary Stats */}
@@ -162,7 +162,7 @@ export function ResourceAllocation({ onProjectClick }: ResourceAllocationProps) 
 
       {/* Customer Engineers Grid */}
       <div>
-        <h3 className="text-sm font-semibold text-black uppercase tracking-wide mb-4">
+        <h3 className="text-sm font-semibold text-slate-100 uppercase tracking-wide mb-4">
           Customer Engineers
         </h3>
         {allocation.engineers.length > 0 ? (
@@ -189,7 +189,7 @@ export function ResourceAllocation({ onProjectClick }: ResourceAllocationProps) 
       </div>
 
       {/* Summary Footer */}
-      <div className="text-xs text-slate-500 border-t border-slate-800 pt-4">
+      <div className="text-xs text-slate-400 border-t border-slate-800 pt-4">
         Total: {allocation.summary.totalProjects} projects |
         Assigned: {allocation.summary.assignedProjects} |
         Unassigned: {allocation.summary.unassignedProjects} |
@@ -229,7 +229,7 @@ function SummaryCard({
             <div className={`text-2xl font-bold ${colorClasses[variant]}`}>
               {value}
             </div>
-            <div className="text-xs text-slate-500">{label}</div>
+            <div className="text-xs text-slate-400">{label}</div>
           </div>
         </div>
       </CardContent>
