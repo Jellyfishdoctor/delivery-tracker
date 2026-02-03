@@ -82,7 +82,9 @@ export async function GET(request: Request) {
       );
 
       // Get the primary account manager (from first project)
-      const primaryAM = account.projects[0]?.accountManager;
+      const firstProject = account.projects[0];
+      const primaryAM = firstProject?.accountManager ||
+        (firstProject?.accountManagerName ? { id: null, name: firstProject.accountManagerName, email: null } : null);
 
       // Get pending action items count across all projects
       // (We'll add this later when we have action items)

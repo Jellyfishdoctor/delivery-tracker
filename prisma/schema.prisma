@@ -66,28 +66,29 @@ model AccountName {
 }
 
 model Project {
-  id                 String        @id @default(cuid())
-  accountManagerId   String
-  accountManager     User          @relation("AccountManager", fields: [accountManagerId], references: [id])
-  accountNameId      String
-  accountName        AccountName   @relation(fields: [accountNameId], references: [id])
-  stage              String        // POC, ONBOARDING, PRODUCTION
-  product            String        // JSON array: ["ANALYTICS", "AI_AGENT"]
-  channels           String?       // JSON array: ["PSTN", "WHATSAPP"] - required when AI_AGENT selected
+  id                   String        @id @default(cuid())
+  accountManagerId     String?
+  accountManager       User?         @relation("AccountManager", fields: [accountManagerId], references: [id])
+  accountManagerName   String?       // Free-form AM name when not selecting from users
+  accountNameId        String
+  accountName          AccountName   @relation(fields: [accountNameId], references: [id])
+  stage                String        // POC, ONBOARDING, PRODUCTION
+  product              String        // JSON array: ["ANALYTICS", "AI_AGENT"]
+  channels             String?       // JSON array: ["PSTN", "WHATSAPP"] - required when AI_AGENT selected
   customerEngineerId   String?
   customerEngineer     User?         @relation("CustomerEngineer", fields: [customerEngineerId], references: [id])
   customerEngineerName String?       // Free-form CE name when not selecting from users
-  spoc               String
-  priority           String        // HIGH, MEDIUM, LOW
-  useCaseSummary     String
-  targetDate         DateTime
-  status             String        // NOT_STARTED, IN_PROGRESS, ON_HOLD, COMPLETED, BLOCKED
-  jiraTicket         String?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-  auditLogs          AuditLog[]
-  meetingNotes       MeetingNote[]
-  subtasks           Subtask[]
+  spoc                 String
+  priority             String        // HIGH, MEDIUM, LOW
+  useCaseSummary       String
+  targetDate           DateTime
+  status               String        // NOT_STARTED, IN_PROGRESS, ON_HOLD, COMPLETED, BLOCKED
+  jiraTicket           String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  auditLogs            AuditLog[]
+  meetingNotes         MeetingNote[]
+  subtasks             Subtask[]
 }
 
 model AuditLog {

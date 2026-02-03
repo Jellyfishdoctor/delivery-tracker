@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const updateProjectSchema = z.object({
-  accountManagerId: z.string().optional(),
+  accountManagerId: z.string().nullable().optional(),
+  accountManagerName: z.string().nullable().optional(), // Free-form AM name
   accountNameId: z.string().optional(),
   stage: z.enum(["POC", "ONBOARDING", "PRODUCTION"]).optional(),
   product: z.string().optional(), // JSON array string
@@ -92,6 +93,7 @@ export async function PUT(
 
     const fieldLabels: Record<string, string> = {
       accountManagerId: "Account Manager",
+      accountManagerName: "Account Manager Name",
       accountNameId: "Account Name",
       stage: "Stage",
       product: "Product",

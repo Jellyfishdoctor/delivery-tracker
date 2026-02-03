@@ -37,7 +37,8 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 
 const formSchema = z.object({
-  accountManagerId: z.string().min(1, "Account manager is required"),
+  accountManagerId: z.string().optional(),
+  accountManagerName: z.string().optional(),
   accountNameId: z.string().optional(),
   accountNameNew: z.string().optional(),
   stage: z.enum(["POC", "ONBOARDING", "PRODUCTION"]),
@@ -102,6 +103,7 @@ export function ProjectForm({ initialData, onSuccess, mode = "create" }: Project
   const [accountNameOpen, setAccountNameOpen] = useState(false);
   const [ceOpen, setCeOpen] = useState(false);
   const [newAccountName, setNewAccountName] = useState("");
+  const [newAMName, setNewAMName] = useState("");
   const [newCEName, setNewCEName] = useState("");
   const { toast } = useToast();
 
@@ -230,6 +232,8 @@ export function ProjectForm({ initialData, onSuccess, mode = "create" }: Project
           channels: data.channels && data.channels.length > 0 ? JSON.stringify(data.channels) : null,
           targetDate: data.targetDate.toISOString(),
           accountNameNew: newAccountName || undefined,
+          accountManagerId: data.accountManagerId || null,
+          accountManagerName: newAMName || null,
           customerEngineerId: data.customerEngineerId || null,
           customerEngineerName: newCEName || null,
         }),
@@ -248,6 +252,7 @@ export function ProjectForm({ initialData, onSuccess, mode = "create" }: Project
       if (mode === "create") {
         form.reset();
         setNewAccountName("");
+        setNewAMName("");
         setNewCEName("");
       }
 
@@ -281,19 +286,34 @@ export function ProjectForm({ initialData, onSuccess, mode = "create" }: Project
                 aria-expanded={accountManagerOpen}
                 className="w-full justify-between"
               >
-                {selectedUser ? (
-                  <span>{selectedUser.name || selectedUser.email}</span>
-                ) : (
-                  <span className="text-muted-foreground">Select account manager...</span>
+                {newAMName || selectedUser?.name || selectedUser?.email || (
+                  <span className="text-muted-foreground">Select or type name...</span>
                 )}
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-full p-0" align="start">
               <Command>
-                <CommandInput placeholder="Search users..." />
+                <CommandInput
+                  placeholder="Search or type name..."
+                  value={newAMName}
+                  onValueChange={setNewAMName}
+                />
                 <CommandList>
-                  <CommandEmpty>No user found.</CommandEmpty>
+                  <CommandEmpty>
+                    {newAMName && (
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          form.setValue("accountManagerId", "");
+                          setAccountManagerOpen(false);
+                        }}
+                      >
+                        Use &quot;{newAMName}&quot;
+                      </Button>
+                    )}
+                  </CommandEmpty>
                   <CommandGroup>
                     {users.map((user) => (
                       <CommandItem
@@ -301,6 +321,7 @@ export function ProjectForm({ initialData, onSuccess, mode = "create" }: Project
                         value={user.name || user.email}
                         onSelect={() => {
                           form.setValue("accountManagerId", user.id);
+                          setNewAMName("");
                           setAccountManagerOpen(false);
                         }}
                       >

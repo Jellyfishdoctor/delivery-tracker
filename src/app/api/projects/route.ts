@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const createProjectSchema = z.object({
-  accountManagerId: z.string().min(1, "Account manager is required"),
+  accountManagerId: z.string().nullable().optional(),
+  accountManagerName: z.string().nullable().optional(), // Free-form AM name
   accountNameId: z.string().optional(),
   accountNameNew: z.string().optional(),
   stage: z.enum(["POC", "ONBOARDING", "PRODUCTION"]),
@@ -19,7 +20,11 @@ const createProjectSchema = z.object({
   targetDate: z.string().transform((str) => new Date(str)),
   status: z.enum(["NOT_STARTED", "IN_PROGRESS", "ON_HOLD", "COMPLETED", "BLOCKED"]),
   jiraTicket: z.string().optional(),
-});
+}).refine((data) => {
+  // Either accountManagerId or accountManagerName must be provided
+  return (data.accountManagerId && data.accountManagerId.length > 0) ||
+         (data.accountManagerName && data.accountManagerName.length > 0);
+}, { message: "Account manager is required", path: ["accountManagerId"] });
 
 export async function GET(request: Request) {
   try {
@@ -117,7 +122,8 @@ export async function POST(request: Request) {
 
     const project = await prisma.project.create({
       data: {
-        accountManagerId: data.accountManagerId,
+        accountManagerId: data.accountManagerId || null,
+        accountManagerName: data.accountManagerName || null,
         accountNameId,
         stage: data.stage,
         product: data.product,
