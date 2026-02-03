@@ -126,7 +126,9 @@ export default function DashboardPage() {
       if (filters.status && filters.status !== "all") params.set("status", filters.status);
       if (search) params.set("search", search);
 
-      const response = await fetch(`/api/accounts/aggregated?${params.toString()}`);
+      const response = await fetch(`/api/accounts/aggregated?${params.toString()}`, {
+        cache: 'no-store',
+      });
       if (response.ok) {
         const data = await response.json();
         setAccounts(data);

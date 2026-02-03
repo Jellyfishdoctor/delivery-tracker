@@ -1,7 +1,18 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProjectForm } from "@/components/forms/ProjectForm";
 
 export default function NewEntryPage() {
+  const router = useRouter();
+
+  const handleSuccess = () => {
+    // Redirect to dashboard after successful creation
+    router.push("/dashboard");
+    router.refresh();
+  };
+
   return (
     <div className="p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
@@ -18,7 +29,7 @@ export default function NewEntryPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ProjectForm />
+          <ProjectForm onSuccess={handleSuccess} />
         </CardContent>
       </Card>
       </div>

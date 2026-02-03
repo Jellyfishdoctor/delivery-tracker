@@ -135,7 +135,9 @@ export default function EntriesPage() {
       if (filters.customerEngineerId && filters.customerEngineerId !== "all") params.set("customerEngineerId", filters.customerEngineerId);
       if (search) params.set("search", search);
 
-      const response = await fetch(`/api/projects?${params.toString()}`);
+      const response = await fetch(`/api/projects?${params.toString()}`, {
+        cache: 'no-store',
+      });
       if (response.ok) {
         const data = await response.json();
         setProjects(data);
