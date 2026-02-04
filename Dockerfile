@@ -39,14 +39,21 @@ RUN adduser --system --uid 1001 nextjs
 # Copy built application from builder
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+
+# Copy Prisma files (schema + migrations + client + CLI)
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
 # Copy public folder
 COPY --from=builder /app/public ./public
 
-# Create data directory for SQLite and set permissions
-RUN mkdir -p /app/data && chown -R nextjs:nodejs /app
+# Copy entrypoint script directly from host (not from builder)
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
+RUN chown -R nextjs:nodejs /app
 
 USER nextjs
 
@@ -55,4 +62,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "server.js"]

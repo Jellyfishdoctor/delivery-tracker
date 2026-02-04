@@ -8,12 +8,29 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=file:/app/data/dev.db
+      - DATABASE_URL=postgresql://delivery_user:delivery_password@postgres:5432/delivery_tracker?schema=public
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-your-secret-key-change-in-production}
       - NEXTAUTH_URL=http://localhost:3000
-    volumes:
-      - sqlite-data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=delivery_user
+      - POSTGRES_PASSWORD=delivery_password
+      - POSTGRES_DB=delivery_tracker
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U delivery_user -d delivery_tracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
-  sqlite-data:
+  postgres-data:
